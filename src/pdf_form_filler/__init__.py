@@ -1,24 +1,18 @@
-"""
-Fill PDF AcroForm fields with validation against each field definition, write an incremental update
-and optionally flatten the result
-"""
+"""pdf_form_filler: Fill PDF AcroForm fields with validation and incremental updates."""
 
 from __future__ import annotations
 
-__all__ = ["__version__", "normalize"]
+import logging
 
-__version__ = "0.1.0"
+from pdf_form_filler.errors import FormError
+from pdf_form_filler.models import Field
+from pdf_form_filler.ops import fill, read_fields
 
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-def normalize(value: str) -> str:
-    """Return ``value`` trimmed and lower-cased.
-
-    Placeholder API created by the template: replace it with the utility's real behavior.
-
-    Raises:
-        ValueError: if ``value`` is empty or only whitespace.
-    """
-    cleaned = value.strip()
-    if not cleaned:
-        raise ValueError("value must not be empty")
-    return cleaned.lower()
+__all__ = [
+    "Field",
+    "FormError",
+    "fill",
+    "read_fields",
+]

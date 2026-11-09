@@ -19,6 +19,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+pdf-form-filler = "pdf_form_filler.__main__:main"
+
 [project.urls]
 Homepage = "https://github.com/Trysac/u903-pdf-form-filler"
 Source = "https://github.com/Trysac/u903-pdf-form-filler"
@@ -41,6 +44,7 @@ dev = [
     "bandit>=1.9.4",
     "mypy>=2.4.1",
     "pip-audit>=2.10.1",
+    "pypdf>=7,<8",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.3",

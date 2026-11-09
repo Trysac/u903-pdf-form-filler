@@ -9,4 +9,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Initial release of trysac-pdf-form-filler with AcroForm validation, incremental updates, and flattening.
 - Initial project structure from the factory utility template.
