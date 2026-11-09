@@ -28,22 +28,23 @@ def test_pdfjs_conformance(tmp_path: Path) -> None:
 
     # Script to extract annotations with pdf.js
     node_script = tmp_path / "read_fields.mjs"
+    pdfjs_full_path = pdfjs_path.resolve().as_uri()
     node_script.write_text(
-        """
+        f"""
 import fs from 'fs';
-import * as pdfjs from './node_modules/pdfjs-dist/build/pdf.mjs';
+import * as pdfjs from '{pdfjs_full_path}';
 
 const data = new Uint8Array(fs.readFileSync(process.argv[2]));
-const loadingTask = pdfjs.getDocument({ data });
+const loadingTask = pdfjs.getDocument({{ data }});
 const doc = await loadingTask.promise;
 const page = await doc.getPage(1);
 const annotations = await page.getAnnotations();
-const result = {};
-for (const annot of annotations) {
-    if (annot.fieldName) {
+const result = {{}};
+for (const annot of annotations) {{
+    if (annot.fieldName) {{
         result[annot.fieldName] = annot.fieldValue;
-    }
-}
+    }}
+}}
 console.log(JSON.stringify(result));
 """
     )
