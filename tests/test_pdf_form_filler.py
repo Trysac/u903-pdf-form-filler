@@ -217,14 +217,30 @@ def test_parser_coverage() -> None:
     assert decode_stream_data(None, b"data") == b"data"
     assert decode_stream_data(["None"], b"data") == b"data"
 
-    # Unpredict png
+    # Decompression failure
+    with pytest.raises(FormError) as exc:
+        decode_stream_data("FlateDecode", b"invalid_compressed_data")
+    assert exc.value.code == "malformed"
+
+    # Unpredict png filters
     # filter 0 (None): val = x
     assert _unpredict_png(b"\x00" + b"\x01\x02", 2) == b"\x01\x02"
     # filter 1 (Sub): val = (x + a) & 0xFF
-    # row = b"\x01\x01\x02" -> filter=1, raw=b"\x01\x02".
-    # c=0: a=0. val=(1+0)=1. cur_row[0]=1.
-    # c=1: a=1. val=(2+1)=3. cur_row[1]=3.
     assert _unpredict_png(b"\x01" + b"\x01\x02", 2) == b"\x01\x03"
+    # filter 2 (Up): val = (x + b) & 0xFF
+    # two rows: row 0 all 0s for prev_row, row 1 with filter 2
+    row0 = b"\x00\x05\x05"
+    row1 = b"\x02\x02\x03"
+    res = _unpredict_png(row0 + row1, 2)
+    assert res == b"\x05\x05\x07\x08"
+    # filter 3 (Average)
+    row_avg = b"\x03\x02\x02"
+    res_avg = _unpredict_png(row0 + row_avg, 2)
+    assert len(res_avg) == 4
+    # filter 4 (Paeth)
+    row_paeth = b"\x04\x01\x01"
+    res_paeth = _unpredict_png(row0 + row_paeth, 2)
+    assert len(res_paeth) == 4
 
 
 def test_tokenizer_coverage() -> None:
@@ -269,3 +285,53 @@ def test_checkbox_options_and_boolean() -> None:
     with pytest.raises(FormError) as exc:
         fill(src, {"agree": "Maybe"})
     assert exc.value.code == "invalid_option"
+
+    # text field invalid type
+    with pytest.raises(FormError) as exc:
+        fill(src, {"name": 123})  # type: ignore[dict-item]
+    assert exc.value.code == "invalid_option"
+
+    # choice field invalid type
+    with pytest.raises(FormError) as exc:
+        fill(src, {"color": True})  # type: ignore[dict-item]
+    assert exc.value.code == "invalid_option"
+
+
+def test_tokenizer_more_coverage() -> None:
+    from pdf_form_filler.tokenizer import PdfString, Tokenizer
+
+    # Name with #20
+    tok = Tokenizer(b"/A#20B")
+    name = tok.parse_token()
+    assert name.value == "A B"
+
+    # String with utf16le and utf8 BOM
+    s_le = PdfString(b"\xff\xfeA\x00")
+    assert s_le.decode_text() == "A"
+    s_utf8 = PdfString(b"\xef\xbb\xbfHello")
+    assert s_utf8.decode_text() == "Hello"
+
+    # Delimiters
+    tok_d = Tokenizer(b">> [ ]")
+    assert tok_d.parse_token() == ">>"
+    assert tok_d.parse_token() == "["
+    assert tok_d.parse_token() == "]"
+
+
+def test_writer_coverage() -> None:
+    from pdf_form_filler.tokenizer import IndirectRef, PdfName, StreamObj
+    from pdf_form_filler.writer import serialize_obj
+
+    assert serialize_obj(None) == "null"
+    assert serialize_obj(True) == "true"
+    assert serialize_obj(False) == "false"
+    assert serialize_obj(42) == "42"
+    assert serialize_obj(3.14) == "3.14"
+    assert serialize_obj(5.0) == "5"
+    assert serialize_obj(IndirectRef(1, 0)) == "1 0 R"
+    assert serialize_obj(PdfName("Test")) == "/Test"
+    assert serialize_obj([1, 2]) == "[ 1 2 ]"
+    assert "<<\n/Key 1\n>>" in serialize_obj({"Key": 1})
+    st = StreamObj(dict_val={"Type": PdfName("XObject")}, data=b"hello")
+    serialized_st = serialize_obj(st)
+    assert "stream\nhelloendstream" in serialized_st
