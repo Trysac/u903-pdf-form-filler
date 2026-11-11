@@ -78,4 +78,5 @@ console.log(JSON.stringify(result));
 
     res = json.loads(proc.stdout)
     assert res.get("name") == "Ada"
-    assert res.get("color") == "green"
+    # pdf.js normalizes a choice field's value to a list of selected options.
+    assert res.get("color") == ["green"]
