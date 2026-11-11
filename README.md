@@ -1,48 +1,49 @@
-# pdf-form-filler
+# trysac-pdf-form-filler
 
-[![PyPI version](https://img.shields.io/pypi/v/trysac-pdf-form-filler)](https://pypi.org/project/trysac-pdf-form-filler/)
-[![License: MIT](https://img.shields.io/pypi/l/trysac-pdf-form-filler)](LICENSE)
-[![CI](https://github.com/Trysac/u903-pdf-form-filler/actions/workflows/ci.yml/badge.svg)](https://github.com/Trysac/u903-pdf-form-filler/actions/workflows/ci.yml)
+Fill PDF AcroForm fields with validation against field definitions, write an incremental update and optionally flatten the result.
 
-Fill PDF AcroForm fields with validation against each field definition, write an incremental update and optionally flatten the result
+## Installation
 
-## Problem
-
-Describe in two or three sentences the concrete problem this utility solves, who hits it, and what
-they do today without it. Replace this paragraph when the first real feature lands.
-
-## Install
-
-```sh
+```bash
 pip install trysac-pdf-form-filler
-# or
-uv add trysac-pdf-form-filler
 ```
-
-Requires Python 3.10 or newer. No runtime dependencies.
 
 ## Usage
 
 ```python
-import pdf_form_filler
+from pdf_form_filler import fill, read_fields
 
-# normalize() trims surrounding whitespace and lower-cases the text.
-print(pdf_form_filler.normalize("  Hello World "))  # -> "hello world"
+with open("form.pdf", "rb") as f:
+    pdf_data = f.read()
 
-# Blank input is rejected explicitly instead of returning an empty string.
-try:
-    pdf_form_filler.normalize("   ")
-except ValueError as exc:
-    print(f"rejected: {exc}")
+fields = read_fields(pdf_data)
+print([f.name for f in fields.values()])
+
+filled_pdf = fill(pdf_data, {"name": "Ada", "agree": True})
+with open("filled.pdf", "wb") as f:
+    f.write(filled_pdf)
 ```
 
-## Documentation
+## CLI
 
-- [Architecture](docs/ARCHITECTURE.md) and [decisions](docs/decisions/)
-- [Testing](docs/TESTING.md) and [security](docs/SECURITY.md)
-- [Project record](docs/PROJECT.md) and [stack](docs/STACK.md)
-- [Changelog](CHANGELOG.md) and [contributing guide](CONTRIBUTING.md)
+Inspect form fields:
+```bash
+python -m pdf_form_filler fields in.pdf
+```
 
-## License
+Fill form fields:
+```bash
+python -m pdf_form_filler fill in.pdf --set name=Ada --set agree=true --out out.pdf
+```
 
-[MIT](LICENSE) (c) 2026 Miguel Gomez
+Flatten form widgets:
+```bash
+python -m pdf_form_filler fill in.pdf --set name=Ada --flatten --out flattened.pdf
+```
+
+## Features & Limitations
+
+- **Incremental updates**: Original byte contents are preserved verbatim.
+- **AcroForm validation**: Validates values against defined choices, character limits (`MaxLen`), and read-only flags with typed errors.
+- **Conformance**: Compliant with ISO 32000-1:2008.
+- **Out of Scope**: Encryption, digital signatures, XFA forms, rich text fields, comb fields, font embedding, and rotated widgets.
